@@ -23,6 +23,8 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+$ys_lng = array("fr", "es", "en");
+
 function youscribe_parse( $content )
 {
 	// Parse post and check for youscribe embed
@@ -53,9 +55,9 @@ function youscribe_render( $tags )
 	if ( empty($attributes['width']) ) $attributes['width'] = '100%';
 	
 	// Language
-	$language = preg_match('/$([a-z]+)/i', get_bloginfo('language'));
+	$language = strtolower(preg_match('/$([a-z]+)/i', get_bloginfo('language')));
 
-	if (empty($language) || !['fr', 'es', 'en'].contains($language))
+	if (empty($language) || in_array($language, $ys_lng))
 	{
 		$language = 'en';
 	}
@@ -63,32 +65,37 @@ function youscribe_render( $tags )
 	// Create links
 	$base_url = 'http://' + ($language == 'fr' ? 'www' : $language) + '.youscribe.com';
 	$home_url = $base_url;
-	$user_url = $base_url + '/' + $attributes['user_name'];
+	$user_url = $base_url + '/' + strtolower($attributes['user_name']);
 
 	// Iframe querystring
 	$iqs  = 'productId=' . $attributes['id'];
-	$iqs  = '&amp;documentId=' . $attributes['did'];
-	$iqs .= '&amp;width=' . $attributes['width'];
-	$iqs .= '&amp;height=' . $attributes['height'];
+	$iqs .= '&amp;documentId=' . $attributes['did'];
+	//$iqs .= '&amp;width=' . $attributes['width'];
+    if ($attributes['height'] != 'auto')
+	    $iqs .= '&amp;height=' . (intval(str_replace('px', '', $attributes['height'])) - 42);
 	$iqs .= '&amp;startPage=' . $attributes['page'];
 	$iqs .= '&amp;displayMode=' . $attributes['mode'];
 	if (!empty($attributes['token']))
 		$iqs .= '&amp;token=' . $attributes['token'];
 	$iqs .= '&amp;fullscreen=0';
 
-	$publish_by = 'publié par';
+	$publish_by = 'publi&eacute; par';
 	if ($language == 'en')
 		$publish_by = 'publish by';
 	else if ($language == 'es')
 		$publish_by = 'publish by';
 
 	// Generate HTML code
-	$html = '<div style="overflow: hidden;position: relative;">'
-	$html .= '<iframe src="http://' . ($language == 'fr' ? 'www' : $language) . '.youscribe.com/BookReader/IframeEmbed?' . $iqs .  '" allowfullscreen  webkitallowfullscreen mozallowfullscreen frameborder="0" scrolling="no"  '
-		$html .= ' width="' . $attributes['width'] . '" height="' . $attributes['height'] . '" marginwidth="0" marginheight="0" style="overflow:hidden;border: solid 1px #BCBDBC;"></iframe>'
-	$html .= '</div><div style="margin-bottom:5px">'
-	$html .= '<a href="' . $attributes["url"] . '" title="' + $attributes["title"] + '" target="_blank">' . $attributes["title"] . '</a>'
-	$html .= ' ' . $publish_by  ' <a href="' . $user_url . '" target="_blank">' . $attributes['user_name'] . '</a></div>'
+	$html = '<div style="overflow: hidden;position: relative;">';
+	$html .= '<iframe src="http://www.youscribe.com/BookReader/IframeEmbed?' . $iqs .  '" allowfullscreen  webkitallowfullscreen mozallowfullscreen frameborder="0" scrolling="no"  ';
+		$html .= ' width="' . $attributes['width'] . '" height="' . $attributes['height'] . '" marginwidth="0" marginheight="0" style="overflow:hidden;border: solid 1px #BCBDBC;"></iframe>';
+	$html .= '</div>';
+    $html .= '<div style="margin-bottom:5px">';
+    if (!empty($attributes["title"]) && !empty($attributes["url"]))
+	    $html .= '<a href="' . $attributes["url"] . '" title="' + $attributes["title"] + '" target="_blank">' . $attributes["title"] . '</a>';
+    if (!empty($attributes['user_name']))
+	    $html .= ' ' . $publish_by . ' <a href="' . $user_url . '" target="_blank">' . $attributes['user_name'] . '</a>';
+    $html .= '</div>';
 
 	return $html;
 }
